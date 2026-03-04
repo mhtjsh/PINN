@@ -1,4 +1,4 @@
-# PINNs
+# PINN
 
 # [Burgers Equation Using PINNs](https://github.com/mhtjsh/PINNs-Learning-/blob/Primary/Burges%20Equation%20Standard%20vs%20Fourier%20Training%20PINN.ipynb)
 
