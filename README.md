@@ -1,6 +1,6 @@
 # PINNs
 
-# Burgers Equation Using PINNs
+# [Burgers Equation Using PINNs]([url](https://github.com/mhtjsh/PINNs-Learning-/blob/Primary/Burges%20Equation%20Standard%20vs%20Fourier%20Training%20PINN.ipynb))
 
 ## Problem Setup
 
