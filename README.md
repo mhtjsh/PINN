@@ -1,166 +1,142 @@
-# PINN
+# Physics-Informed Neural Networks (PINNs)
 
-# [Burgers Equation Using PINNs](https://github.com/mhtjsh/PINNs-Learning-/blob/Primary/Burges%20Equation%20Standard%20vs%20Fourier%20Training%20PINN.ipynb)
+This repository contains experiments with **Physics-Informed Neural Networks (PINNs)** for solving partial differential equations by incorporating governing physics directly into the training objective.
 
-## Problem Setup
+Currently, the repository includes:
 
-The **1D viscous Burgers equation** is solved using a **Physics-Informed Neural Network (PINN)**:
-
-$$
-u_t + u u_x = \nu u_{xx}
-$$
-
-where
-
-$$
-\nu = \frac{0.01}{\pi}
-$$
-
-The spatial and temporal domains are:
-
-- $x \in [-1,1]$
-- $t \in [0,1]$
+- Burgers Equation (Standard vs Fourier PINN)  
+- Electrostatic Potential via Laplace Equation  
 
 ---
 
-## Initial Condition
+## 1. Burgers Equation
+
+Link: https://github.com/mhtjsh/PINN/blob/Primary/Burges%20Equation%20Standard%20vs%20Fourier%20Training%20PINN.ipynb
+
+### Problem
+
+We solve the 1D viscous Burgers equation:
+
+$$
+u_t + u u_x = \nu u_{xx}, \quad \nu = \frac{0.01}{\pi}
+$$
+
+**Domain:**
+
+- $x \in [-1,1]$  
+- $t \in [0,1]$  
+
+**Initial condition:**
 
 $$
 u(x,0) = -\sin(\pi x)
 $$
 
----
-
-## Boundary Conditions
+**Boundary conditions:**
 
 $$
-u(-1,t) = 0
+u(-1,t) = 0, \quad u(1,t) = 0
 $$
 
-$$
-u(1,t) = 0
-$$
-
-This configuration is commonly used in **PINN benchmarks** because the solution develops **steep gradients during evolution**, making it a challenging nonlinear PDE problem.
+This setup is a standard PINN benchmark due to the formation of **steep gradients (shock-like behavior)**.
 
 ---
 
-# Standard PINN
+### Approach
 
-## Model
+A fully connected neural network approximates $u(x,t)$ and is trained using:
 
-A **fully connected neural network** with **tanh activation functions** is used to approximate the solution
+- PDE residual loss  
+- Initial condition loss  
+- Boundary condition loss  
+
+**Residual:**
 
 $$
-u(x,t)
+f(x,t) = u_t + u u_x - \nu u_{xx}
 $$
 
-The PINN is trained by minimizing three components:
+**Training strategy:**
 
-- **PDE residual loss**
-- **Initial condition loss**
-- **Boundary condition loss**
-
-### Collocation Points
-
-- **Interior collocation points** enforce the PDE.
-- **Initial points** enforce the initial condition.
-- **Boundary points** enforce the boundary conditions.
+- Adam (initial convergence)  
+- L-BFGS (refinement)  
 
 ---
 
-## Training Strategy
+### Fourier Feature Variant
 
-Training uses a **two-stage optimization scheme**:
-
-1. **Adam optimizer** – coarse optimization  
-2. **L-BFGS optimizer** – refinement
-
-This hybrid strategy improves convergence when minimizing the physics residual.
-
----
-
-## Results
-
-The **standard PINN** reproduces the global structure of the Burgers solution:
-
-- Sinusoidal initial condition
-- Wave steepening over time
-- Symmetric Burgers dynamics
-
-The PDE residual remains small across most of the domain, with slightly higher values near the **shock region around $x \approx 0$**.
-
-This region contains **steep gradients**, which are challenging for standard PINNs.
-
----
-
-# Fourier Feature PINN
-
-## Intended Hypotheses
-
-Standard neural networks tend to learn **low-frequency components** more easily than **high-frequency structures**.
-
-Since Burgers dynamics produce **sharp spatial gradients**, this can limit the model's representation capacity.
-
----
-
-## Method
-
-To address this limitation, **Fourier feature embeddings** are introduced before the neural network.
-
-The input coordinates are mapped as
+To mitigate spectral bias, inputs are mapped using Fourier features:
 
 $$
 (x,t) \rightarrow [\sin(Bx), \cos(Bx)]
 $$
 
-This expands the input representation using **periodic basis functions**.
+This improves the model’s ability to represent **high-frequency components**, particularly near the shock region.
 
 ---
 
-## Results
+### Observations
 
-The **Fourier PINN** produces:
-
-- Sharper representation of the evolving wave
-- Better modeling of **steep gradients near the shock region**
-
-The **PDE residual heatmap** also shows a more consistent distribution of error across the domain.
+- The **standard PINN** captures global dynamics but shows higher residuals near $x \approx 0$.  
+- The **Fourier PINN** improves resolution of steep gradients and yields more uniform residuals.  
 
 ---
 
-# Diagnostics
+## 2. Electrostatic Potential (Laplace Equation)
 
-Two visualizations are used to evaluate the model.
+Link: https://github.com/mhtjsh/PINN/blob/Primary/PINN_w_electorstatic_potential_through_Laplace_eqn.ipynb
 
-## Solution Heatmap
+### Problem
 
-Shows the predicted Burgers solution across **space and time**.
-
-## PDE Residual Heatmap
-
-Displays the magnitude of the physics residual:
+We solve the 2D Laplace equation:
 
 $$
-\left| u_t + u u_x - \nu u_{xx} \right|
+\nabla^2 \phi = 0
 $$
 
-This highlights regions where the **physics constraint is hardest for the network to satisfy**.
+or equivalently,
 
-Residual values are lowest across most of the domain and increase slightly near the **shock region**, which is expected due to the large gradients present there.
+$$
+\frac{\partial^2 \phi}{\partial x^2} + \frac{\partial^2 \phi}{\partial y^2} = 0
+$$
+
+This governs electrostatic potential in regions with no charge.
 
 ---
 
-# Summary
+### Approach
 
-Both models successfully solve the **Burgers equation using physics-informed training**.
+A neural network approximates $\phi(x,y)$.
 
-### Standard PINN
-- Captures the overall dynamics
-- Correctly models the global solution
+The loss consists of:
 
-### Fourier PINN
-- Improves representation of **sharp spatial features**
-- Better handles **high-frequency gradients**
+- **PDE residual:**
 
-These results demonstrate how **feature embeddings can enhance PINN performance when modeling nonlinear PDEs with steep gradients**.
+$$
+f(x,y) = \phi_{xx} + \phi_{yy}
+$$
+
+- **Boundary condition loss**
+
+$$
+\mathcal{L} = \mathcal{L}_{PDE} + \mathcal{L}_{BC}
+$$
+
+Second-order derivatives are computed using automatic differentiation.
+
+---
+
+### Observations
+
+- The model learns smooth potential fields consistent with Laplace dynamics.  
+- Results are strongly influenced by boundary conditions, as expected for elliptic PDEs.  
+- Compared to Burgers, convergence is more stable due to the absence of nonlinear advection.  
+
+---
+
+## Summary
+
+- **Burgers Equation** highlights challenges in PINNs for nonlinear PDEs with sharp gradients and demonstrates the benefit of Fourier feature embeddings.  
+- **Laplace Equation** provides a stable setting illustrating PINNs for elliptic PDEs governed primarily by boundary conditions.  
+
+Overall, these notebooks illustrate both the **strengths and limitations of PINNs**, particularly the role of representation and optimization in solving different classes of PDEs.
